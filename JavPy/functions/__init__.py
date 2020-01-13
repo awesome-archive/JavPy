@@ -1,10 +1,12 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from JavPy.functions.search import Search
+from JavPy.functions.search_by_code import SearchByCode
+from JavPy.functions.search_by_actress import SearchByActress
 from JavPy.functions.new import New
 from JavPy.functions.brief import Brief as GetBrief
 from JavPy.functions.datastructure import AV, Brief
 from JavPy.functions.magnet import Magnet
 from JavPy.functions.history_names import HistoryNames
+from JavPy.functions.actress_info import ActressInfo
 from JavPy.utils.common import cache
 from JavPy.utils.requester import spawn_many, Task, spawn
 import os
@@ -15,17 +17,18 @@ class Functions:
     @staticmethod
     @cache
     def search_by_code(code):
-        av, brief_info = spawn_many((
-            Task(Search.search_by_code, code),
-            Task(Functions.get_brief, code)
-        )).wait_for_all_finished()
+        av, brief_info = spawn_many(
+            (Task(SearchByCode.search, code), Task(Functions.get_brief, code))
+        ).wait_for_all_finished()
         if av:
             res = av
             if brief_info:
                 res.actress = brief_info.actress if brief_info.actress else ""
                 res.set_release_date(brief_info.release_date)
                 res.title = brief_info.title
-                res.preview_img_url = brief_info.preview_img_url if brief_info.preview_img_url else ""
+                res.preview_img_url = (
+                    brief_info.preview_img_url if brief_info.preview_img_url else ""
+                )
             return res
         else:
             return None
@@ -38,7 +41,7 @@ class Functions:
     @staticmethod
     @cache
     def search_by_actress(actress, up_to, history_name=False):
-        return Search.search_by_actress(actress, up_to, history_name)
+        return SearchByActress.search(actress, up_to, history_name)
 
     @staticmethod
     @cache
@@ -73,10 +76,13 @@ class Functions:
             with open(curdir + "/../sources/categories.json") as fp:
                 content = fp.read()
                 obj = json.loads(content)
-                Functions.tags = obj['javmost']
+                Functions.tags = obj["javmost"]
         return Functions.tags
 
     @staticmethod
     @cache
     def get_actress_info(actress):
-        pass
+        return ActressInfo.get_actress_info(actress)
+
+
+
